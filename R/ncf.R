@@ -1513,18 +1513,21 @@ NAO <- FALSE
 	#then generating geographic distances
 	if(latlon){
                 #these are geographic distances from lat-lon coordinates
-                dmat <- matrix(0, nrow = n, ncol = n)
-                for(i in 1:(n-1)) {
-                        for(j in (i+1):n) {
-                                dmat[j, i] <- gcdist(x[i], y[i], x[j], y[j])
-                                dmat[i, j] <- dmat[j, i]
-                        }
-                }
+                # dmat <- matrix(0, nrow = n, ncol = n)
+                # for(i in 1:(n-1)) {
+                        # for(j in (i+1):n) {
+                                # dmat[j, i] <- gcdist(x[i], y[i], x[j], y[j])
+                                # dmat[i, j] <- dmat[j, i]
+                        # }
+                # }
+				
+				dmat=rdist.earth(matrix(c(x,y), ncol=2))
+				
         }
 
 	else{
 		#these are geographic distances from euclidian coordinates
-		dmat <- sqrt(outer(x,x, "-")^2+outer(y,y,"-")^2)
+		dmat=rdist(matrix(c(x,y), ncol=2))
 	}
 
 	if(resamp != 0){
@@ -1539,10 +1542,17 @@ NAO <- FALSE
 		dmat <- dmat[row(dmat)!=col(dmat)]
 	}
 
+	
         dkl <- ceiling(dmat/increment) 	#generates the distance matrices
-        nlok <- sapply(split(moran, dkl), length)
-        dmean <- sapply(split(dmat, dkl), mean, na.rm = TRUE)
-        moran <- sapply(split(moran, dkl), mean, na.rm = TRUE)
+		
+		tmpDT<-data.table(moran=c(moran), dmat=c(dmat), dkl=as.character(c(dkl)))
+		setkey(tmpDT, dkl)
+		tmpDT2=tmpDT[,list(nlok=length(moran), dmean=mean(dmat, na.rm=TRUE), moran=mean(moran, na.rm=TRUE)), by=dkl]
+        nlok <- tmpDT2[[2]]
+        dmean <- tmpDT2[[3]]
+        moran <- tmpDT2[[4]]
+		
+		
 	ly <- 1:length(dmean)
 	x <- c(dmean[ly[moran < 0][1]], dmean[ly[moran < 0][1] - 1])
 	y <- c(moran[ly[moran < 0][1] - 1], moran[ly[moran < 0][1]])
@@ -1574,10 +1584,14 @@ NAO <- FALSE
 			}
 
 			dkl <- ceiling(dma/increment)	#generates the distance matrices
-			perm[i,] <- sapply(split(mor, dkl), mean, na.rm = TRUE)
+			
+			tmpDT<-data.table(mor=c(mor), dkl=as.character(c(dkl)))
+			setkey(tmpDT, dkl)
+			perm[i,]<-tmpDT[,mean(mor, na.rm=TRUE), by=dkl][[2]]
+			
 		}
 
-  p=(apply(moran<=t(perm),1,sum))/(resamp+1)
+  p=rowSums(moran<=t(perm))/(resamp+1)
   p=apply(cbind(p, 1-p), 1, min) + 1/(resamp+1)
 	}
 
