@@ -8,6 +8,7 @@ Sncf<-function(x, y, z, w=NULL, df = NULL, type = "boot", resamp = 1000, npoints
 #
 #The function requires multiple observations at each location (use spline.correlog
 #otherwise).
+# this is a redundant comment
 #
 #
 #REQUIRED ARGUMENTS
